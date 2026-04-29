@@ -1,0 +1,92 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- FROST EXPLOIT V14.0
+-- OWNER: VINZZX
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+local Core = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LP = Players.LocalPlayer
+local Mouse = LP:GetMouse()
+
+-- --- SETTINGS ---
+local Settings = {
+    AimKill = false,
+    ESPLine = false,
+    ESPBox = false,
+    SpinBot = false,
+    Visible = true
+}
+
+-- --- GUI CONSTRUCTION ---
+local Screen = Instance.new("ScreenGui", Core)
+Screen.Name = "FrostExploitVXT"
+
+-- Tombol Pelindung (Hide/Show)
+local ShieldBtn = Instance.new("ImageButton", Screen)
+ShieldBtn.Size = UDim2.new(0, 60, 0, 70)
+ShieldBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
+ShieldBtn.Image = "rbxassetid://108797261811252" -- Ganti ID logo pelindung biru lu
+ShieldBtn.BackgroundTransparency = 1
+
+local MainFrame = Instance.new("Frame", Screen)
+MainFrame.Size = UDim2.new(0, 220, 0, 160)
+MainFrame.Position = UDim2.new(0.15, 0, 0.35, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(50, 50, 50)
+
+-- --- TOGGLE FUNCTION ---
+local function createMenuBtn(name, pos, settingKey)
+    local btn = Instance.new("TextButton", MainFrame)
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.Position = pos
+    btn.BackgroundTransparency = 1
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 0, 0) -- Default Merah
+    btn.Font = Enum.Font.Rajdhani
+    btn.TextSize = 22
+
+    btn.MouseButton1Click:Connect(function()
+        Settings[settingKey] = not Settings[settingKey]
+        -- Ganti warna ke HIJAU saat aktif
+        btn.TextColor3 = Settings[settingKey] and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    end)
+end
+
+createMenuBtn("AIMKILL", UDim2.new(0, 0, 0, 10), "AimKill")
+createMenuBtn("ESP LINE", UDim2.new(0, 0, 0, 45), "ESPLine")
+createMenuBtn("ESP BOX", UDim2.new(0, 0, 0, 80), "ESPBox")
+createMenuBtn("SPIN BOT", UDim2.new(0, 0, 0, 115), "SpinBot")
+
+-- --- LOGIC EXECUTION ---
+
+-- Hide Toggle
+ShieldBtn.MouseButton1Click:Connect(function()
+    Settings.Visible = not Settings.Visible
+    MainFrame.Visible = Settings.Visible
+end)
+
+-- AimKill (Auto Kill All)
+RunService.RenderStepped:Connect(function()
+    if Settings.AimKill then
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LP and v.Character and v.Character:FindFirstChild("Humanoid") then
+                if v.Character.Humanoid.Health > 0 then
+                    -- Client-side simulation of auto-kill
+                    v.Character.Humanoid.Health = 0 
+                end
+            end
+        end
+    end
+end)
+
+-- Spinbot (2x Speed)
+RunService.RenderStepped:Connect(function()
+    if Settings.SpinBot and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        LP.Character.HumanoidRootPart.CFrame = LP.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(40), 0) -- 2x Fast Spin
+    end
+end)
+
+-- ESP Drawing Logic (Line: Putih, Box: Merah)
+-- Cuma lu yang bisa lihat (Local)
