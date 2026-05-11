@@ -1,0 +1,155 @@
+-- ╔══════════════════════════════════════════╗
+-- ║   ROBLOX AI CHAT - NO GUI VERSION       ║
+-- ║   Pasang di: ServerScriptService        ║
+-- ╚══════════════════════════════════════════╝
+
+local Players = game:GetService("Players")
+local Chat = game:GetService("Chat")
+
+-- ══════════════════════════════════════
+-- CONFIG
+-- ══════════════════════════════════════
+local PREFIX = "!ai"       -- Ketik "!ai halo" di chat untuk tanya AI
+local BOT_NAME = "AI Bot"
+local REPLY_DELAY = 0.8    -- Delay sebelum AI balas (detik)
+
+-- ══════════════════════════════════════
+-- KNOWLEDGE BASE
+-- ══════════════════════════════════════
+local KB = {
+	-- GREETINGS
+	{keys={"halo","hai","hello","hi","hey","hy"}, reply="Halo! Ada yang bisa aku bantu? Ketik !ai <pertanyaan>"},
+	{keys={"pagi"}, reply="Selamat pagi! Semoga harimu menyenangkan!"},
+	{keys={"siang"}, reply="Selamat siang! Lagi asik main nih!"},
+	{keys={"malam"}, reply="Selamat malam! Masih semangat main!"},
+
+	-- IDENTITAS
+	{keys={"siapa kamu","nama kamu","who are you"}, reply="Aku AI Assistant game ini. Siap membantu kamu!"},
+	{keys={"dibuat","creator","siapa yang buat"}, reply="Aku dibuat khusus untuk game ini!"},
+
+	-- GAME HELP
+	{keys={"cara main","how to play","tutorial"}, reply="Gunakan WASD gerak, Space lompat. Jelajahi map dan selesaikan quest!"},
+	{keys={"quest","misi","mission"}, reply="Cek papan quest di spawn area untuk lihat misi yang tersedia!"},
+	{keys={"item","barang","loot"}, reply="Item tersebar di seluruh map. Eksplorasi tiap sudut!"},
+	{keys={"level","exp","xp"}, reply="Naik level dengan selesaikan quest dan kalahkan musuh!"},
+	{keys={"skill","ability","kemampuan"}, reply="Buka skill di menu karakter, tekan M!"},
+	{keys={"map","peta","dimana","lokasi"}, reply="Tekan M untuk buka peta. Ada zona Desa, Hutan, Pegunungan, dan Kastil!"},
+	{keys={"boss","musuh kuat","enemy"}, reply="Boss muncul tiap 30 menit di Kastil. Ajak teman raid bareng!"},
+	{keys={"teman","party","friend"}, reply="Invite teman lewat icon di pojok kanan atas. Max 4 orang per party!"},
+	{keys={"uang","coin","gold"}, reply="Dapat coin dari quest, boss, dan daily login. Beli item di toko!"},
+	{keys={"toko","shop","beli","buy"}, reply="Toko ada di area Desa dekat spawn!"},
+	{keys={"mati","respawn","die","dead"}, reply="Kamu respawn di checkpoint terakhir. Isi HP pakai potion!"},
+	{keys={"save","simpan","progress"}, reply="Progress tersimpan otomatis tiap 5 menit!"},
+	{keys={"cheat","hack","exploit"}, reply="Tidak ada cheat di sini! Main fair ya!"},
+
+	-- SMALLTALK
+	{keys={"apa kabar","how are you","kabar"}, reply="Aku baik! Kamu gimana? Udah lama main?"},
+	{keys={"bosan","boring","gabut"}, reply="Jangan bosan! Coba challenge boss atau jelajahi area baru!"},
+	{keys={"seru","fun","asik","keren"}, reply="Senang kamu suka game ini! Masih banyak yang bisa dieksplorasi!"},
+	{keys={"makasih","terima kasih","thanks","thank you"}, reply="Sama-sama! Senang bisa membantu!"},
+	{keys={"bye","dadah","sampai jumpa"}, reply="Sampai jumpa! Semoga harimu menyenangkan!"},
+	{keys={"joke","lucu","humor"}, reply="Kenapa programmer suka gelap? Karena light attracts bugs!"},
+	{keys={"lapar","hungry","makan"}, reply="Haha aku AI jadi ga bisa lapar! Kamu makan dulu gih!"},
+	{keys={"cuaca","weather"}, reply="Cuaca game berubah tiap 10 menit. Hujan bikin musuh lebih kuat!"},
+	{keys={"ok","oke","iya","sip"}, reply="Siap! Kalau ada yang lain, ketik !ai <pertanyaan>!"},
+}
+
+-- ══════════════════════════════════════
+-- FUNGSI CARI JAWABAN
+-- ══════════════════════════════════════
+local function getReply(msg)
+	msg = msg:lower()
+	for _, e in ipairs(KB) do
+		for _, k in ipairs(e.keys) do
+			if msg:find(k) then
+				return e.reply
+			end
+		end
+	end
+	local defaults = {
+		"Hmm, aku belum tahu jawabannya. Coba tanya hal lain!",
+		"Pertanyaan bagus! Sayangnya aku masih belajar.",
+		"Aku tidak yakin soal itu. Ada yang lain?",
+		"Coba tanya admin game ya!",
+	}
+	return defaults[math.random(1, #defaults)]
+end
+
+-- ══════════════════════════════════════
+-- FUNGSI KIRIM CHAT
+-- ══════════════════════════════════════
+local function sendSystemChat(player, message)
+	-- Kirim sebagai System Message ke player tertentu
+	local success, err = pcall(function()
+		game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+			Text = "[" .. BOT_NAME .. "]: " .. message,
+			Color = Color3.fromRGB(167, 139, 250),
+			Font = Enum.Font.GothamBold,
+			TextSize = 14,
+		})
+	end)
+end
+
+-- Pakai RemoteEvent untuk kirim ke client
+local RE = Instance.new("RemoteEvent")
+RE.Name = "AIChatEvent"
+RE.Parent = game:GetService("ReplicatedStorage")
+
+-- LocalScript handler (dibuat otomatis)
+local ls_src = [[
+local RE = game:GetService("ReplicatedStorage"):WaitForChild("AIChatEvent")
+local StarterGui = game:GetService("StarterGui")
+RE.OnClientEvent:Connect(function(msg, color)
+	StarterGui:SetCore("ChatMakeSystemMessage", {
+		Text = msg,
+		Color = color or Color3.fromRGB(167, 139, 250),
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+	})
+end)
+]]
+
+local function injectLocalScript(player)
+	local char = player.Character or player.CharacterAdded:Wait()
+	local ls = Instance.new("LocalScript")
+	ls.Source = ls_src
+	ls.Parent = player:WaitForChild("PlayerGui")
+end
+
+-- ══════════════════════════════════════
+-- MAIN LOGIC
+-- ══════════════════════════════════════
+local function onPlayerAdded(player)
+	-- Inject local script
+	task.spawn(injectLocalScript, player)
+
+	-- Sambut player
+	task.wait(3)
+	RE:FireClient(player, "[🤖 AI]: Halo " .. player.Name .. "! Ketik !ai <pertanyaan> untuk tanya aku!", Color3.fromRGB(167,139,250))
+
+	-- Listen chat
+	player.Chatted:Connect(function(msg)
+		local lower = msg:lower()
+
+		-- Cek prefix
+		if lower:sub(1, #PREFIX) == PREFIX then
+			local question = msg:sub(#PREFIX + 2):match("^%s*(.-)%s*$")
+			if question and question ~= "" then
+				task.wait(REPLY_DELAY)
+				local reply = getReply(question)
+				RE:FireClient(player, "[🤖 AI]: " .. reply, Color3.fromRGB(167,139,250))
+			else
+				RE:FireClient(player, "[🤖 AI]: Ketik pertanyaanmu setelah !ai ya! Contoh: !ai cara main", Color3.fromRGB(167,139,250))
+			end
+		end
+	end)
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+
+-- Untuk player yang sudah ada
+for _, p in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayerAdded, p)
+end
+
+print("[AI Chat] System loaded! Prefix: " .. PREFIX)
