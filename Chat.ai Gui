@@ -1,0 +1,281 @@
+-- ╔══════════════════════════════════════════╗
+-- ║   ROBLOX AI CHAT - GUI VERSION          ║
+-- ║   Pasang di: StarterPlayerScripts       ║
+-- ╚══════════════════════════════════════════╝
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ══════════════════════════════════════
+-- KNOWLEDGE BASE
+-- ══════════════════════════════════════
+local KB = {
+	{keys={"halo","hai","hello","hi","hey"}, reply="Halo! Ada yang bisa aku bantu? 😊"},
+	{keys={"pagi"}, reply="Selamat pagi! Semoga harimu menyenangkan! ☀️"},
+	{keys={"siang"}, reply="Selamat siang! Lagi asik main nih! 😄"},
+	{keys={"malam"}, reply="Selamat malam! Masih semangat main! 🌙"},
+	{keys={"siapa kamu","nama kamu","who are you"}, reply="Aku AI Assistant game ini. Siap membantu! 🤖"},
+	{keys={"cara main","how to play","tutorial"}, reply="Gunakan WASD gerak, Space lompat. Jelajahi map & selesaikan quest!"},
+	{keys={"quest","misi","mission"}, reply="Cek papan quest di spawn area! Ada banyak reward menarik 🏆"},
+	{keys={"item","barang","loot"}, reply="Item tersebar di seluruh map. Eksplorasi tiap sudut!"},
+	{keys={"level","exp","xp"}, reply="Naik level dengan selesaikan quest & kalahkan musuh!"},
+	{keys={"skill","ability","kemampuan"}, reply="Buka skill di menu karakter (tekan M)!"},
+	{keys={"map","peta","dimana"}, reply="Tekan M untuk buka peta. Ada zona Desa, Hutan, Pegunungan & Kastil!"},
+	{keys={"boss","musuh kuat"}, reply="Boss muncul tiap 30 menit di Kastil. Ajak teman raid bareng! 💪"},
+	{keys={"teman","party","friend"}, reply="Invite teman lewat icon di pojok kanan atas. Max 4 orang per party!"},
+	{keys={"uang","coin","gold"}, reply="Dapat coin dari quest, boss & daily login. Beli item di toko!"},
+	{keys={"toko","shop","beli"}, reply="Toko ada di area Desa dekat spawn!"},
+	{keys={"mati","respawn","die"}, reply="Kamu respawn di checkpoint terakhir. Isi HP pakai potion! 🧪"},
+	{keys={"apa kabar","how are you"}, reply="Aku baik! Kamu gimana? Udah lama main? 😊"},
+	{keys={"bosan","boring","gabut"}, reply="Jangan bosan! Coba challenge boss atau jelajahi area baru! 🎮"},
+	{keys={"makasih","terima kasih","thanks"}, reply="Sama-sama! Senang bisa membantu 😊"},
+	{keys={"bye","dadah","sampai jumpa"}, reply="Sampai jumpa! Semoga harimu menyenangkan 👋"},
+	{keys={"joke","lucu","humor"}, reply="Kenapa programmer suka gelap? Karena light attracts bugs! 😂"},
+	{keys={"lapar","hungry","makan"}, reply="Haha aku AI jadi ga bisa lapar 😂 Kamu makan dulu gih!"},
+	{keys={"cuaca","weather"}, reply="Cuaca di game berubah tiap 10 menit. Hujan bikin musuh lebih kuat! 🌧️"},
+}
+
+local function getReply(msg)
+	msg = msg:lower()
+	for _, e in ipairs(KB) do
+		for _, k in ipairs(e.keys) do
+			if msg:find(k) then return e.reply end
+		end
+	end
+	local d = {
+		"Hmm, aku belum tahu jawabannya 🤔",
+		"Pertanyaan bagus! Sayangnya aku masih belajar.",
+		"Aku tidak yakin soal itu. Ada yang lain? 😊",
+		"Coba tanya admin game ya!",
+	}
+	return d[math.random(1,#d)]
+end
+
+-- ══════════════════════════════════════
+-- BUILD GUI
+-- ══════════════════════════════════════
+local sg = Instance.new("ScreenGui")
+sg.Name = "AIChatGui"
+sg.ResetOnSpawn = false
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+sg.Parent = playerGui
+
+-- Toggle Button
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 110, 0, 36)
+toggleBtn.Position = UDim2.new(1, -125, 1, -55)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(124, 58, 237)
+toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+toggleBtn.Text = "🤖 AI Chat"
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 13
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Parent = sg
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,18)
+
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = UDim2.new(1, -315, 1, -455)
+frame.BackgroundColor3 = Color3.fromRGB(10, 10, 22)
+frame.BorderSizePixel = 0
+frame.Visible = false
+frame.Parent = sg
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+local fs = Instance.new("UIStroke", frame)
+fs.Color = Color3.fromRGB(124,58,237)
+fs.Thickness = 1.5
+
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1,0,0,44)
+header.BackgroundColor3 = Color3.fromRGB(124,58,237)
+header.BorderSizePixel = 0
+header.Parent = frame
+Instance.new("UICorner", header).CornerRadius = UDim.new(0,12)
+
+local fix = Instance.new("Frame")
+fix.Size = UDim2.new(1,0,0.5,0)
+fix.Position = UDim2.new(0,0,0.5,0)
+fix.BackgroundColor3 = Color3.fromRGB(124,58,237)
+fix.BorderSizePixel = 0
+fix.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-40,1,0)
+title.Position = UDim2.new(0,12,0,0)
+title.BackgroundTransparency = 1
+title.Text = "🤖  AI Assistant"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0,30,0,30)
+closeBtn.Position = UDim2.new(1,-36,0,7)
+closeBtn.BackgroundColor3 = Color3.fromRGB(239,68,68)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 13
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = header
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,6)
+
+-- Chat Scroll
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1,-16,1,-104)
+scroll.Position = UDim2.new(0,8,0,52)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 3
+scroll.ScrollBarImageColor3 = Color3.fromRGB(124,58,237)
+scroll.CanvasSize = UDim2.new(0,0,0,0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Parent = frame
+
+local listLayout = Instance.new("UIListLayout", scroll)
+listLayout.Padding = UDim.new(0,8)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local scrollPad = Instance.new("UIPadding", scroll)
+scrollPad.PaddingTop = UDim.new(0,6)
+scrollPad.PaddingBottom = UDim.new(0,6)
+
+-- Input Bar
+local inputBar = Instance.new("Frame")
+inputBar.Size = UDim2.new(1,-16,0,44)
+inputBar.Position = UDim2.new(0,8,1,-52)
+inputBar.BackgroundColor3 = Color3.fromRGB(20,20,38)
+inputBar.BorderSizePixel = 0
+inputBar.Parent = frame
+Instance.new("UICorner", inputBar).CornerRadius = UDim.new(0,10)
+local ib_s = Instance.new("UIStroke", inputBar)
+ib_s.Color = Color3.fromRGB(124,58,237)
+ib_s.Thickness = 1
+
+local inputBox = Instance.new("TextBox")
+inputBox.Size = UDim2.new(1,-50,1,-10)
+inputBox.Position = UDim2.new(0,8,0,5)
+inputBox.BackgroundTransparency = 1
+inputBox.Text = ""
+inputBox.PlaceholderText = "Ketik pesan..."
+inputBox.PlaceholderColor3 = Color3.fromRGB(100,100,130)
+inputBox.TextColor3 = Color3.fromRGB(220,220,255)
+inputBox.Font = Enum.Font.Gotham
+inputBox.TextSize = 13
+inputBox.TextXAlignment = Enum.TextXAlignment.Left
+inputBox.ClearTextOnFocus = false
+inputBox.Parent = inputBar
+
+local sendBtn = Instance.new("TextButton")
+sendBtn.Size = UDim2.new(0,36,0,30)
+sendBtn.Position = UDim2.new(1,-42,0,7)
+sendBtn.BackgroundColor3 = Color3.fromRGB(124,58,237)
+sendBtn.Text = "➤"
+sendBtn.TextColor3 = Color3.fromRGB(255,255,255)
+sendBtn.Font = Enum.Font.GothamBold
+sendBtn.TextSize = 16
+sendBtn.BorderSizePixel = 0
+sendBtn.Parent = inputBar
+Instance.new("UICorner", sendBtn).CornerRadius = UDim.new(0,8)
+
+-- ══════════════════════════════════════
+-- FUNGSI BUAT BUBBLE CHAT
+-- ══════════════════════════════════════
+local msgCount = 0
+
+local function addBubble(text, isUser)
+	msgCount += 1
+	local bubble = Instance.new("Frame")
+	bubble.Size = UDim2.new(1,0,0,0)
+	bubble.AutomaticSize = Enum.AutomaticSize.Y
+	bubble.BackgroundTransparency = 1
+	bubble.LayoutOrder = msgCount
+	bubble.Parent = scroll
+
+	local inner = Instance.new("Frame")
+	inner.AutomaticSize = Enum.AutomaticSize.XY
+	inner.BackgroundColor3 = isUser and Color3.fromRGB(124,58,237) or Color3.fromRGB(30,30,55)
+	inner.BorderSizePixel = 0
+	inner.Parent = bubble
+	Instance.new("UICorner", inner).CornerRadius = UDim.new(0,10)
+	local ip = Instance.new("UIPadding", inner)
+	ip.PaddingTop = UDim.new(0,8); ip.PaddingBottom = UDim.new(0,8)
+	ip.PaddingLeft = UDim.new(0,10); ip.PaddingRight = UDim.new(0,10)
+
+	if isUser then
+		inner.Position = UDim2.new(1,-10,0,0)
+		inner.AnchorPoint = Vector2.new(1,0)
+	else
+		inner.Position = UDim2.new(0,10,0,0)
+	end
+
+	local lbl = Instance.new("TextLabel", inner)
+	lbl.Size = UDim2.new(0,180,0,0)
+	lbl.AutomaticSize = Enum.AutomaticSize.Y
+	lbl.BackgroundTransparency = 1
+	lbl.Text = text
+	lbl.TextColor3 = Color3.fromRGB(220,220,255)
+	lbl.Font = Enum.Font.Gotham
+	lbl.TextSize = 12
+	lbl.TextWrapped = true
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+	-- Typing effect untuk AI
+	if not isUser then
+		lbl.Text = ""
+		task.spawn(function()
+			for i = 1, #text do
+				lbl.Text = text:sub(1,i)
+				task.wait(0.02)
+			end
+		end)
+	end
+
+	-- Auto scroll ke bawah
+	task.wait(0.05)
+	scroll.CanvasPosition = Vector2.new(0, scroll.AbsoluteCanvasSize.Y)
+end
+
+-- Pesan selamat datang
+task.wait(1)
+addBubble("Halo " .. player.Name .. "! Aku AI Assistant. Ada yang bisa aku bantu? 😊", false)
+
+-- ══════════════════════════════════════
+-- KIRIM PESAN
+-- ══════════════════════════════════════
+local function sendMessage()
+	local msg = inputBox.Text:match("^%s*(.-)%s*$")
+	if msg == "" then return end
+	addBubble(msg, true)
+	inputBox.Text = ""
+
+	-- Typing indicator
+	task.wait(0.5)
+	local reply = getReply(msg)
+	addBubble(reply, false)
+end
+
+sendBtn.MouseButton1Click:Connect(sendMessage)
+inputBox.FocusLost:Connect(function(enter)
+	if enter then sendMessage() end
+end)
+
+-- Toggle visibility
+local isOpen = false
+toggleBtn.MouseButton1Click:Connect(function()
+	isOpen = not isOpen
+	frame.Visible = isOpen
+	toggleBtn.Text = isOpen and "✕ Tutup" or "🤖 AI Chat"
+end)
+closeBtn.MouseButton1Click:Connect(function()
+	isOpen = false
+	frame.Visible = false
+	toggleBtn.Text = "🤖 AI Chat"
+end)
